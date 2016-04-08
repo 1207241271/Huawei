@@ -34,6 +34,9 @@ public final class Route {
     private static short[] pass;
     private static HashMap<Integer ,Integer > passIndex;
 
+
+    private static ArrayList<ArrayList>   passSet;
+
     private static Point currentminpoint = null;
 
 
@@ -48,7 +51,8 @@ public final class Route {
         topo= FormatData(graphContent);
         FormatCondition(condition);
         initPointsArray();
-
+        initHeapArray();
+        initPassSet();
 
 
         LogUtil.printLog("Format");
@@ -236,8 +240,161 @@ public final class Route {
         HeapArray[index*2-1]=new MinValueHeap(pointsArray[end]);
     }
 
-    public static void searchFont(){
-
+    public static void initPassSet() {
+        passSet = new ArrayList<ArrayList>();
+        for (int i = 0; i < pass.length + 2; i++) {
+            passSet.add(new ArrayList<Integer>());
+        }
+        passSet.get(0).add((int)start);
+        for (int i = 1; i < pass.length+1; i++) {
+            passSet.get(i).add((int)pass[i-1]);
+        }
+        passSet.get(pass.length+1).add((int)end);
     }
+
+    public static boolean checkIsInOneRoute(int routeA,int routeB){
+        int point1=(routeA+1)/2;
+        int point2=(routeB+1)/2;
+        boolean hasOne=false;
+        for (ArrayList<Integer> arrayList:passSet) {
+            for (Integer num:arrayList){
+                if (num==point1||num==point2){
+                    if (hasOne==false){
+                        hasOne=true;
+                    }else {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public static void searchFont(Point point){
+        if (point.getHeapIndex()!=-1){
+            int pointID=point.getPointID();
+            int heapindex=point.getHeapIndex();
+            int totalValue=point.getTotalValue();
+            for (int i = 1; i <topo.length ; i++) {
+                if (topo[pointID][i].getCost()!=-1){
+                    Point tmp=pointsArray[i];
+                    if (tmp.getPointLine()==-1){
+                        tmp.setPointLine(0);
+                        tmp.setPrePoint(point);
+                        tmp.setTotalValue(totalValue+topo[pointID][i].getCost());
+                        tmp.setHeapIndex(heapindex);
+                        HeapArray[heapindex].insert(point);
+                    }else if (tmp.getPointLine()==0){
+                        if (HeapArray[tmp.getHeapIndex()].isRun()){
+                            //遇到同方向的暂时不取
+                            if (tmp.getPrePoint()!=null){
+//                                continue;
+                            }else{
+                                //遇到可连接点
+                                if (!checkIsInOneRoute(point.getHeapIndex(),tmp.getHeapIndex())) {
+                                    //如果不是已经在一条路上
+
+                                    Point setPre = point;
+                                    int routeIndex = (heapindex + 1) / 2;
+                                    while (setPre.getPrePoint() != null && setPre.getPointLine() == 0) {
+                                        setPre.getPrePoint().setNextPoint(setPre);
+                                        setPre.setPointLine(routeIndex);
+                                        setPre = setPre.getPrePoint();
+                                    }
+                                    HeapArray[heapindex].stop();
+
+                                    Point setNext = tmp;
+                                    while (setNext.getNextPoint() != null && setNext.getPointLine() == 0) {
+                                        setNext.getNextPoint().setPrePoint(setNext);
+                                        setNext.setPointLine(routeIndex);
+                                        setNext = setNext.getNextPoint();
+                                    }
+                                    HeapArray[setNext.getHeapIndex()].stop();
+
+                                    return;
+                                }
+                            }
+                        }else{
+                                //延伸到了已死点,继续加入
+                                tmp.setPointLine(0);
+                                tmp.setPrePoint(point);
+                                tmp.setTotalValue(totalValue+topo[pointID][i].getCost());
+                                tmp.setHeapIndex(heapindex);
+                                HeapArray[heapindex].insert(point);
+
+
+                        }
+                    }else {
+                        //延伸到了路上
+                    }
+
+                }
+            }
+        }
+    }
+
+    public static void searchBack(Point point){
+        if (point.getHeapIndex()!=-1){
+            int pointID=point.getPointID();
+            int heapindex=point.getHeapIndex();
+            int totalValue=point.getTotalValue();
+            for (int i = 1; i <topo.length ; i++) {
+                if (topo[i][pointID].getCost()!=-1){
+                    Point tmp=pointsArray[i];
+                    if (tmp.getPointLine()==-1){
+                        tmp.setPointLine(0);
+                        tmp.setNextPoint(point);
+                        tmp.setTotalValue(totalValue+topo[i][pointID].getCost());
+                        tmp.setHeapIndex(heapindex);
+                        HeapArray[heapindex].insert(point);
+                    }else if (tmp.getPointLine()==0){
+                        if (HeapArray[tmp.getHeapIndex()].isRun()){
+                            //遇到同方向的暂时不取
+                            if (tmp.getPrePoint()!=null){
+//                                continue;
+                            }else{
+                                //遇到可连接点
+                                if (!checkIsInOneRoute(point.getHeapIndex(),tmp.getHeapIndex())) {
+                                    //如果不是已经在一条路上
+
+                                    Point setPre = tmp;
+                                    int routeIndex = (heapindex + 1) / 2;
+                                    while (setPre.getPrePoint() != null && setPre.getPointLine() == 0) {
+                                        setPre.getPrePoint().setNextPoint(setPre);
+                                        setPre.setPointLine(routeIndex);
+                                        setPre = setPre.getPrePoint();
+                                    }
+                                    HeapArray[heapindex].stop();
+
+                                    Point setNext = point;
+                                    while (setNext.getNextPoint() != null && setNext.getPointLine() == 0) {
+                                        setNext.getNextPoint().setPrePoint(setNext);
+                                        setNext.setPointLine(routeIndex);
+                                        setNext = setNext.getNextPoint();
+                                    }
+                                    HeapArray[setNext.getHeapIndex()].stop();
+
+                                    return;
+                                }
+                            }
+                        }else{
+                            //延伸到了已死点,继续加入
+                            tmp.setPointLine(0);
+                            tmp.setNextPoint(point);
+                            tmp.setTotalValue(totalValue+topo[pointID][i].getCost());
+                            tmp.setHeapIndex(heapindex);
+                            HeapArray[heapindex].insert(point);
+
+
+                        }
+                    }else {
+                        //延伸到了路上
+                    }
+
+                }
+            }
+        }
+    }
+
 
 }

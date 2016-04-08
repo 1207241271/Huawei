@@ -18,6 +18,7 @@ public class Topo {
     }
 
     public Topo() {
+        this.cost=-1;
     }
 
     public short getLinkId() {

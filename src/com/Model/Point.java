@@ -15,6 +15,7 @@ public class Point {
     private Point nextPoint;
     private int     heapIndex;
 
+
     public Point(int pointID) {
         this.pointID = pointID;
         this.NextPoints=new ArrayList<>();
@@ -22,6 +23,7 @@ public class Point {
         this.nextPoint=null;
         this.totalValue=0;
         this.pointLine=-1;
+        this.heapIndex=-1;
     }
 
 
@@ -45,9 +47,21 @@ public class Point {
         return this.prePoint;
     }
 
+    public void setPrePoint(Point prePoint) {
+        this.prePoint = prePoint;
+    }
+
     public Point getNextPoint(){
         return this.nextPoint;
     }
+
+    public void setNextPoint(Point nextPoint) {
+        this.nextPoint = nextPoint;
+    }
+
+//    public void addNextPointToNextPoints(Point point){
+//        this.NextPoints.add(point);
+//    };
 
     public void setPointLine(int pointLine) {
         this.pointLine = pointLine;
@@ -55,5 +69,13 @@ public class Point {
 
     public int getPointLine() {
         return pointLine;
+    }
+
+    public int getHeapIndex() {
+        return heapIndex;
+    }
+
+    public void setHeapIndex(int heapIndex) {
+        this.heapIndex = heapIndex;
     }
 }
