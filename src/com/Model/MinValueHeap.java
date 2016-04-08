@@ -17,6 +17,14 @@ public class MinValueHeap {
         this.run=true;
     }
 
+    public MinValueHeap(){
+        this.minHeap=new ArrayList<Point>();
+        //添加一个最小站位
+        Point zeroPoint=new Point();
+        zeroPoint.setTotalValue(Integer.MIN_VALUE);
+        this.minHeap.add(zeroPoint);
+        this.run=true;
+    }
 //    private static MinValueHeap single=null;
 //
 //    public static MinValueHeap getInstance(){

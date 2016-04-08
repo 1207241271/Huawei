@@ -54,11 +54,12 @@ public final class Route {
         initHeapArray();
         initPassSet();
 
+        findnextPointList();
+
 
         LogUtil.printLog("Format");
 
 
-        findMinValueRoute();
         return FormatResult();
     }
 
@@ -82,13 +83,13 @@ public final class Route {
      */
     private static String FormatResult() {
         if(currentminpoint == null) return "NA";
-        Point pre = currentminpoint.getPrevious();
+        Point pre = currentminpoint.getPrePoint();
         Point current = currentminpoint;
         StringBuffer result = new StringBuffer();
         while (pre !=null){
             result.insert(0,topo[pre.getPointID()][current.getPointID()].getLinkId());
             current = pre;
-            pre = current.getPrevious();
+            pre = current.getPrePoint();
             if(pre !=null)
                 result.insert(0,"|");
         }
@@ -96,95 +97,21 @@ public final class Route {
         return result.toString();
     }
 
-    private static void findMinValueRoute() {
-        Point startpoint = new Point(start, 0 , 0, null, null);
-        startpoint.setNextPoints(findnextPointList(startpoint));
-        while (!minValueHeap.isHeapEmpty()) {
-            Point point=minValueHeap.popMin();
-            point.setNextPoints(findnextPointList(point));
-            //int second = LogUtil.getTimeUsed().get(Calendar.SECOND);
-            //if (second >= 9)break;
-//            minValueHeap.insert();
-        }
-    }
-
-    private static List<Point> findnextPointList(Point parent) {
-        List<Point> points = new ArrayList<>();
-        for (int i = 0; i < topo[0].length; i++) {
-            int value = topo[parent.getPointID()][i].getCost();
-            int bestvalue = topo[parent.getPointID()][i].getBestCost();
-            int depth=parent.getDepth();
-            if (value != 0) {
-                Point point = new Point(i, parent.getTotalValue() + value,(int)((parent.getTotalValue()+value)*bestvalue-parent.getDepth()*0.4), null, parent);
-                //判断这个点是不是结尾
-                point.setDepth(depth+1);
-                if (point.getPointID() == end) {
-                    //有没有通过所有特殊点
-                    if (hasallspecialpoint(point)) {
-                        //如果通过了所有特殊点 它是不是最短路径 如果不是则丢弃
-                        if (currentminpoint == null) {
-                            LogUtil.printLog("First route");
-                            currentminpoint = point;
-                        } else if (point.getTotalValue() < currentminpoint.getTotalValue()) {
-                            currentminpoint = point;
-                        }
-                    }
-                } else {
-                    if(haspassedpoint(point)){
-                        continue;
-                    }
-                    //判断这个点如果超出了最短路径则丢弃
-                    if (currentminpoint != null) {
-                        if (point.getTotalBestValue() < currentminpoint.getTotalBestValue() * 0.9) {
-                            minValueHeap.insert(point);
-                            points.add(point);
-                        }
-                    } else {
-                        minValueHeap.insert(point);
-                        points.add(point);
-                    }
-                }
+    private static void findnextPointList() {
+        if (checkIsInOneRoute(0,(pass.length+1)*2-1)){
+            //TODO:第二阶段
+        }else {
+            Point tmp=HeapArray[(pass.length+1)*2].popMin();
+            if (tmp.getHeapIndex()/2==0){
+                searchFont(tmp,tmp.getHeapIndex());
+            }else {
+                searchBack(tmp,tmp.getHeapIndex());
             }
         }
-        return points;
     }
 
-    /**
-     * 判断是否重复经过某点
-     * @param point
-     * @return
-     */
-    private static boolean haspassedpoint(Point point) {
-        int pointId = point.getPointID();
-        point = point.getPrevious();
-        while (point !=null){
-            if(point.getPointID() == pointId)
-                return true;
-            point = point.getPrevious();
-        }
-        return false;
-    }
 
-    /**
-     * 是否通过所有特殊点
-     * @param point
-     * @return
-     */
-    private static boolean hasallspecialpoint(Point point) {
-        int passnumber = pass.length;
-        while (!(point==null || passnumber==0)){
-            for (int i = 0; i < pass.length; i++) {
-                if(point.getPointID() == pass[i])
-                {
-                    passnumber--;
-                    break;
-                }
-            }
-            point = point.getPrevious();
-        }
-        if (passnumber == 0)return true;
-        return false;
-    }
+
 
     /**
      * 格式化条件信息
@@ -228,16 +155,24 @@ public final class Route {
         passIndex.put((int)start,0);
         HeapArray[0]=new MinValueHeap(pointsArray[start]);
 
+        HeapArray[2*(pass.length+1)]=new MinValueHeap();
+
+        searchFont(pointsArray[start],0);
         int index=1;
         for (short pas:pass) {
             passIndex.put((int)pas,index);
             HeapArray[index*2-1]=new MinValueHeap(pointsArray[pas]);
+            searchBack(pointsArray[pas],index*2-1);
             HeapArray[index*2]=new MinValueHeap(pointsArray[pas]);
+            searchFont(pointsArray[pas],index*2);
             index++;
         }
 
         passIndex.put((int)end,index);
         HeapArray[index*2-1]=new MinValueHeap(pointsArray[end]);
+        searchBack(pointsArray[end],index*2-1);
+
+
     }
 
     public static void initPassSet() {
@@ -245,11 +180,9 @@ public final class Route {
         for (int i = 0; i < pass.length + 2; i++) {
             passSet.add(new ArrayList<Integer>());
         }
-        passSet.get(0).add((int)start);
-        for (int i = 1; i < pass.length+1; i++) {
-            passSet.get(i).add((int)pass[i-1]);
+        for (int i = 0; i < pass.length+2; i++) {
+            passSet.get(i).add(i);
         }
-        passSet.get(pass.length+1).add((int)end);
     }
 
     public static boolean checkIsInOneRoute(int routeA,int routeB){
@@ -259,7 +192,7 @@ public final class Route {
         for (ArrayList<Integer> arrayList:passSet) {
             for (Integer num:arrayList){
                 if (num==point1||num==point2){
-                    if (hasOne==false){
+                    if (!hasOne){
                         hasOne=true;
                     }else {
                         return true;
@@ -269,11 +202,31 @@ public final class Route {
         }
         return false;
     }
+    public static void moveSetFromIndexToIndex(int start,int end){
+        int preArrayIndex=0;
+        int nextArrayIndex=0;
+        for (int j = 0; j < passSet.size(); j++) {
+            for (int k = 0; k < passSet.get(j).size(); k++) {
+                if ((int)passSet.get(j).get(k)==start){
+                    preArrayIndex=j;
+                }
+                if ((int)passSet.get(j).get(k)==end){
+                    nextArrayIndex=j;
+                }
+            }
+        }
+        ArrayList<Integer> tmpArray=passSet.get(nextArrayIndex);
+        for (Integer num:tmpArray){
+            passSet.get(preArrayIndex).add(num);
+        }
+        passSet.remove(nextArrayIndex);
 
-    public static void searchFont(Point point){
+        return;
+    }
+
+    public static void searchFont(Point point,int heapindex){
         if (point.getHeapIndex()!=-1){
             int pointID=point.getPointID();
-            int heapindex=point.getHeapIndex();
             int totalValue=point.getTotalValue();
             for (int i = 1; i <topo.length ; i++) {
                 if (topo[pointID][i].getCost()!=-1){
@@ -311,6 +264,7 @@ public final class Route {
                                     }
                                     HeapArray[setNext.getHeapIndex()].stop();
 
+                                    moveSetFromIndexToIndex((tmp.getHeapIndex()+1)/2,(point.getHeapIndex()+1)/2);
                                     return;
                                 }
                             }
@@ -327,16 +281,16 @@ public final class Route {
                     }else {
                         //延伸到了路上
                     }
-
+                    HeapArray[(pass.length+1)*2].insert(HeapArray[heapindex].popMin());
+                    findnextPointList();
                 }
             }
         }
     }
 
-    public static void searchBack(Point point){
+    public static void searchBack(Point point,int heapindex){
         if (point.getHeapIndex()!=-1){
             int pointID=point.getPointID();
-            int heapindex=point.getHeapIndex();
             int totalValue=point.getTotalValue();
             for (int i = 1; i <topo.length ; i++) {
                 if (topo[i][pointID].getCost()!=-1){
@@ -373,7 +327,7 @@ public final class Route {
                                         setNext = setNext.getNextPoint();
                                     }
                                     HeapArray[setNext.getHeapIndex()].stop();
-
+                                    moveSetFromIndexToIndex((tmp.getHeapIndex()+1)/2,(point.getHeapIndex()+1)/2);
                                     return;
                                 }
                             }
@@ -390,7 +344,8 @@ public final class Route {
                     }else {
                         //延伸到了路上
                     }
-
+                    HeapArray[(pass.length+1)*2].insert(HeapArray[heapindex].popMin());
+                    findnextPointList();;
                 }
             }
         }
