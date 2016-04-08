@@ -51,8 +51,8 @@ public final class Route {
         topo= FormatData(graphContent);
         FormatCondition(condition);
         initPointsArray();
-        initHeapArray();
         initPassSet();
+        initHeapArray();
 
         findnextPointList();
 
@@ -102,10 +102,14 @@ public final class Route {
             //TODO:第二阶段
         }else {
             Point tmp=HeapArray[(pass.length+1)*2].popMin();
-            if (tmp.getHeapIndex()/2==0){
-                searchFont(tmp,tmp.getHeapIndex());
+            if (HeapArray[tmp.getHeapIndex()].isRun()) {
+                if (tmp.getHeapIndex() / 2 == 0) {
+                    searchFont(tmp, tmp.getHeapIndex());
+                } else {
+                    searchBack(tmp, tmp.getHeapIndex());
+                }
             }else {
-                searchBack(tmp,tmp.getHeapIndex());
+                findnextPointList();
             }
         }
     }
@@ -152,24 +156,24 @@ public final class Route {
     public static void initHeapArray(){
         passIndex=new HashMap<Integer, Integer>();
         HeapArray=new MinValueHeap[2*(pass.length+1)+1];
-        passIndex.put((int)start,0);
-        HeapArray[0]=new MinValueHeap(pointsArray[start]);
+        passIndex.put(0,(int)start);
+        HeapArray[0]=new MinValueHeap();
 
         HeapArray[2*(pass.length+1)]=new MinValueHeap();
 
         searchFont(pointsArray[start],0);
         int index=1;
         for (short pas:pass) {
-            passIndex.put((int)pas,index);
-            HeapArray[index*2-1]=new MinValueHeap(pointsArray[pas]);
+            passIndex.put(index,(int)pas);
+            HeapArray[index*2-1]=new MinValueHeap();
             searchBack(pointsArray[pas],index*2-1);
-            HeapArray[index*2]=new MinValueHeap(pointsArray[pas]);
+            HeapArray[index*2]=new MinValueHeap();
             searchFont(pointsArray[pas],index*2);
             index++;
         }
 
-        passIndex.put((int)end,index);
-        HeapArray[index*2-1]=new MinValueHeap(pointsArray[end]);
+        passIndex.put(index,(int)end);
+        HeapArray[index*2-1]=new MinValueHeap();
         searchBack(pointsArray[end],index*2-1);
 
 
@@ -225,10 +229,10 @@ public final class Route {
     }
 
     public static void searchFont(Point point,int heapindex){
-        if (point.getHeapIndex()!=-1){
+        if (heapindex!=-1){
             int pointID=point.getPointID();
             int totalValue=point.getTotalValue();
-            for (int i = 1; i <topo.length ; i++) {
+            for (int i = 0; i <topo.length ; i++) {
                 if (topo[pointID][i].getCost()!=-1){
                     Point tmp=pointsArray[i];
                     if (tmp.getPointLine()==-1){
@@ -265,20 +269,28 @@ public final class Route {
                                     HeapArray[setNext.getHeapIndex()].stop();
 
                                     moveSetFromIndexToIndex((tmp.getHeapIndex()+1)/2,(point.getHeapIndex()+1)/2);
+                                    HeapArray[tmp.getHeapIndex()].stop();
+                                    HeapArray[point.getHeapIndex()].stop();
                                     return;
                                 }
                             }
                         }else{
+                            //如果直接连在点上
+
                                 //延伸到了已死点,继续加入
                                 tmp.setPointLine(0);
                                 tmp.setPrePoint(point);
-                                tmp.setTotalValue(totalValue+topo[pointID][i].getCost());
+                                tmp.setTotalValue(totalValue + topo[pointID][i].getCost());
                                 tmp.setHeapIndex(heapindex);
                                 HeapArray[heapindex].insert(point);
 
-
                         }
                     }else {
+                        if (tmp.getPointLine() == tmp.getPointID()) {
+                            moveSetFromIndexToIndex((tmp.getHeapIndex() + 1) / 2, (point.getHeapIndex() + 1) / 2);
+                            HeapArray[tmp.getHeapIndex()].stop();
+                            HeapArray[point.getHeapIndex()].stop();
+                        }
                         //延伸到了路上
                     }
                     HeapArray[(pass.length+1)*2].insert(HeapArray[heapindex].popMin());
@@ -289,7 +301,7 @@ public final class Route {
     }
 
     public static void searchBack(Point point,int heapindex){
-        if (point.getHeapIndex()!=-1){
+        if (heapindex!=-1){
             int pointID=point.getPointID();
             int totalValue=point.getTotalValue();
             for (int i = 1; i <topo.length ; i++) {
@@ -328,20 +340,27 @@ public final class Route {
                                     }
                                     HeapArray[setNext.getHeapIndex()].stop();
                                     moveSetFromIndexToIndex((tmp.getHeapIndex()+1)/2,(point.getHeapIndex()+1)/2);
+                                    HeapArray[tmp.getHeapIndex()].stop();
+                                    HeapArray[point.getHeapIndex()].stop();
                                     return;
                                 }
                             }
                         }else{
-                            //延伸到了已死点,继续加入
-                            tmp.setPointLine(0);
-                            tmp.setNextPoint(point);
-                            tmp.setTotalValue(totalValue+topo[pointID][i].getCost());
-                            tmp.setHeapIndex(heapindex);
-                            HeapArray[heapindex].insert(point);
 
+                                //延伸到了已死点,继续加入
+                                tmp.setPointLine(0);
+                                tmp.setNextPoint(point);
+                                tmp.setTotalValue(totalValue + topo[pointID][i].getCost());
+                                tmp.setHeapIndex(heapindex);
+                                HeapArray[heapindex].insert(point);
 
                         }
                     }else {
+                        if (tmp.getPointLine() == tmp.getPointID()) {
+                            moveSetFromIndexToIndex((tmp.getHeapIndex() + 1) / 2, (point.getHeapIndex() + 1) / 2);
+                            HeapArray[tmp.getHeapIndex()].stop();
+                            HeapArray[point.getHeapIndex()].stop();
+                        }
                         //延伸到了路上
                     }
                     HeapArray[(pass.length+1)*2].insert(HeapArray[heapindex].popMin());

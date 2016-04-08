@@ -16,10 +16,9 @@ public class Main
     public static void main(String[] args)
     {
         args = new String[3];
-        args[0] = "E:\\Code\\Java\\Softwarechallenge-x\\more\\case\\case200-20\\case3\\topo.csv";
-        args[1] = "E:\\Code\\Java\\Softwarechallenge-x\\more\\case\\case200-20\\case3\\demand.csv";
-        args[2] = "E:\\Code\\Java\\Softwarechallenge-x\\more\\case\\case200-20\\case3" +
-                "\\sample_result.csv";
+        args[0] = "/Users/yangxu/Desktop/SoftwareChallenge-xingw/case0/topo.csv";
+        args[1] = "/Users/yangxu/Desktop/SoftwareChallenge-xingw/case0/demand.csv";
+        args[2] = "/Users/yangxu/Desktop/SoftwareChallenge-xingw/case0/sample_result.csv";
         if (args.length != 3)
         {
             System.err.println("please input args: graphFilePath, conditionFilePath, resultFilePath");
